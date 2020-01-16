@@ -1,3 +1,5 @@
+sudo apt-get install python-pygame
+
 数据库：
 ​	create database game;
 ​	create table account
