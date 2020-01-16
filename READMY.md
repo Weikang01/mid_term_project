@@ -8,6 +8,11 @@ sudo apt-get install python-pygame
     create table items
         item_id, 图片2维信息blob
 
+数据库封装成一个类， 由服务端调用，实现功能:
+    is_exist_name(名字) --返回真假
+    is_password_correct(名字，密码) -- 返回真假
+    get_player（名字，密码）-- 返回玩家昵称，信息等
+
 服务端：tcp
 ​	等待客户登录
 ​	发送确认连接信息
