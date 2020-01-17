@@ -1,8 +1,12 @@
 import pygame
 from random import randint
 import os
+from socket import *
+from multiprocessing import Process, Queue
+import signal
+import glob
 
-
+# region classes
 class OtherPlayers(pygame.sprite.Sprite):
     def __init__(self, x=0, y=0, sprite=None):
         super().__init__()
@@ -11,12 +15,8 @@ class OtherPlayers(pygame.sprite.Sprite):
         self.sprite = sprite
         self.rect = pygame.Rect((x, y), (x + 19, y + 25))
 
-    def set_pos(self, pos=(0, 0)):
-        self.x = pos[0]
-        self.y = pos[1]
-
-    def show(self):
-        screen.blit(self.sprite, (self.x, self.y))
+    def show(self, pos=(0, 0)):
+        screen.blit(self.sprite, pos)
 
 
 class Player(pygame.sprite.Sprite):
@@ -66,27 +66,35 @@ class Obstacle:
         self.anchor_y = anchor_y
 
 
-# find absolute path
+# endregion
+
+# region find absolute path
 path_e = os.path.abspath('./combat_scene.py').split('/')[0:-2]
 abs_path = '/'.join(path_e) + '/'
+# endregion
 
-# initiate pygame
+# region initiate pygame
 pygame.init()
-font_01 = pygame.font.Font(f'{abs_path}/Assets/Fonts/Cosima-DemoBold.otf', 23)
 screen_size = (800, 600)
 screen = pygame.display.set_mode(screen_size)
+# endregion
 
+# region load resources
+font_01 = pygame.font.Font(f'{abs_path}/Assets/Fonts/Cosima-DemoBold.otf', 23)
 pygame.display.set_caption('Diamond Warrior')
 icon_img = pygame.image.load(f'{abs_path}/Assets/Sprite/Decor/icon.png')
 pygame.display.set_icon(icon_img)
-
-g_1 = pygame.image.load(f'{abs_path}/Assets/Sprite/Decor/grass01.png')
-g_2 = pygame.image.load(f'{abs_path}/Assets/Sprite/Decor/grass02.png')
-g_3 = pygame.image.load(f'{abs_path}/Assets/Sprite/Decor/grass03.png')
 tree = pygame.image.load(f'{abs_path}/Assets/Sprite/Decor/tree01.png')
+gpath_list = glob.glob(fr'{abs_path}/Assets/Sprite/Decor/grass0?.png')
+map_sprite_list = []
+for i in gpath_list:
+    map_sprite_list.append(pygame.image.load(i))
 
-map_sprite_list = (g_1, g_2, g_3)
+p_i = pygame.image.load(f'{abs_path}/Assets/Sprite/nekochan01/forward00.png')
+o_i = pygame.image.load(f'{abs_path}/Assets/Sprite/nekochan02/idle.png')
+# endregion
 
+# region map_generator
 map_list = []
 
 for y in range(0, screen_size[1] // 32 + 1):
@@ -113,47 +121,77 @@ def add_trees(tree_l):
         screen.blit(tree, i)
 
 
-running = True
+# endregion
 
-p_i = pygame.image.load(f'{abs_path}/Assets/Sprite/nekochan01/idle.png')
+# region socket_handler
+def socket_handler(s, q):
+    ADDRESS = ('172.40.75.152', 8888)
+    s.connect(ADDRESS)
+    print(os.getpid())
+    print('ppid:', os.getppid())
+    while True:
+        data = tuple(socket.recv(1024).decode().strip('.').strip(','))
+        q.put(data)
+        s.send('ok'.encode())
+
+
+# endregion
+
 p = Player(400, 300, 0.5, p_i)
+o = OtherPlayers(0, 0, o_i)
 
 clock = pygame.time.Clock()
-while running:
-    screen.fill((0, 0, 0))
-    clock.tick(60)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_w:
-                p.move_up()
-            if event.key == pygame.K_s:
-                p.move_down()
-            if event.key == pygame.K_a:
-                p.move_left()
-            if event.key == pygame.K_d:
-                p.move_right()
-        if event.type == pygame.KEYUP:
-            if event.key == pygame.K_w:
-                p.up_speed = 0
-            if event.key == pygame.K_s:
-                p.down_speed = 0
-            if event.key == pygame.K_a:
-                p.left_speed = 0
-            if event.key == pygame.K_d:
-                p.right_speed = 0
-    if p.x < 0:
-        p.x = 0
-    if p.y < 0:
-        p.y = 0
-    if p.x > screen_size[0] - 32:
-        p.x = screen_size[0] - 32
-    if p.y > screen_size[1] - 32:
-        p.y = screen_size[1] - 32
-    generate_map(map_list)
-    add_trees(tree_pos_list)
-    font_display = font_01.render('press w,a,s,d to move', True, (255, 255, 255))
-    screen.blit(font_display, (10, 10))
-    p.show()
-    pygame.display.update()
+
+# region create process
+socket = socket()
+signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+ppid = os.getpid()
+queue = Queue()
+process = Process(target=socket_handler, args=(socket, queue))
+process.daemon = True
+# TODO process.start()
+# endregion
+
+running = True
+if os.getpid() == ppid:
+    while running:
+        screen.fill((0, 0, 0))
+        clock.tick(60)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_w:
+                    p.move_up()
+                if event.key == pygame.K_s:
+                    p.move_down()
+                if event.key == pygame.K_a:
+                    p.move_left()
+                if event.key == pygame.K_d:
+                    p.move_right()
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_w:
+                    p.up_speed = 0
+                if event.key == pygame.K_s:
+                    p.down_speed = 0
+                if event.key == pygame.K_a:
+                    p.left_speed = 0
+                if event.key == pygame.K_d:
+                    p.right_speed = 0
+        # region player_position_control
+        if p.x < 0:
+            p.x = 0
+        if p.y < 0:
+            p.y = 0
+        if p.x > screen_size[0] - 32:
+            p.x = screen_size[0] - 32
+        if p.y > screen_size[1] - 32:
+            p.y = screen_size[1] - 32
+        # endregion
+        generate_map(map_list)
+        add_trees(tree_pos_list)
+        font_display = font_01.render('press w,a,s,d to move', True, (255, 255, 255))
+        screen.blit(font_display, (10, 10))
+        # TODO o.show(queue.get())
+        p.show()
+        pygame.display.update()
