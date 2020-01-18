@@ -17,6 +17,7 @@ class Player(pygame.sprite.Sprite):
 
     def test_properties(self):
         self.speed = 5
+        self.is_attack = False
         self.name = 'player01'
 
     def set_press_control(self):
@@ -30,6 +31,9 @@ class Player(pygame.sprite.Sprite):
 
     def get_name(self):
         return self.name
+
+    def get_is_attack(self):
+        return self.is_attack
 
     def set_directional_offsets(self):
         self.left_speed = 0
@@ -129,6 +133,8 @@ class Player(pygame.sprite.Sprite):
             if event.key == pygame.K_DOWN:
                 self.down_pressed = True
                 self.update('down')
+            if event.key == pygame.K_j:
+                self.is_attack = True
 
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT:
