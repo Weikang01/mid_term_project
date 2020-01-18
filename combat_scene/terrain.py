@@ -12,7 +12,7 @@ def terrain_sprites():
 
 
 sprites = terrain_sprites()
-group = pygame.sprite.Group()
+
 
 
 def generate_number():
@@ -26,11 +26,12 @@ def generate_number():
 
 
 def generate_map(map_l):
+    group = pygame.sprite.Group()
     for y in range(len(map_l)):
         for x in range(len(map_l[y])):
-            pass
+            group.add(sprites[map_l[x][y]])
+    return group
 
 
 if __name__ == '__main__':
-    for i in generate_number():
-        print(i)
+    print(generate_map(generate_number()))
