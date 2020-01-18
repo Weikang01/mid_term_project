@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
 from combat_scene.Player import *
 from combat_scene.config import *
+from combat_scene.load import *
 import pygame
+
+pygame.display.set_caption('Diamond Warrior')
+pygame.display.set_icon(icon_img)
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption('Diamond Warrior')
 
 clock = pygame.time.Clock()
 player = Player((WIDTH / 2, HEIGHT / 2))
+
 
 running = True
 while running:
