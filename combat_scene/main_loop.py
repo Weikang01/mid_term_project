@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from combat_scene.Player import *
+from combat_scene.player import *
 from combat_scene.config import *
 from combat_scene.load import *
 from combat_scene.test_client_tcp import *
